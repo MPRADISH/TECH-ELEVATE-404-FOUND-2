@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Hostel Emergency Alert Receiver — Student</title>
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-card: #131c2e;
+      --bg-card-hover: #1c2842;
+      --border: #2a3958;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --red: #dc2626;
+      --orange: #ea580c;
+      --yellow: #ca8a04;
+      --green: #16a34a;
+      --blue: #2563eb;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 17px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Header */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      user-select: none;
+    }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+    }
+
+    /* Connection Pill */
+    .conn-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      border: 1px solid var(--border);
+      background: #1e293b;
+    }
+
+    .conn-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .conn-pill.websocket {
+      background: rgba(22, 163, 74, 0.2);
+      border-color: #22c55e;
+      color: #86efac;
+    }
+    .conn-pill.websocket .conn-dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+
+    .conn-pill.sse {
+      background: rgba(37, 99, 235, 0.2);
+      border-color: #3b82f6;
+      color: #93c5fd;
+    }
+    .conn-pill.sse .conn-dot { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+
+    .conn-pill.polling {
+      background: rgba(202, 138, 4, 0.2);
+      border-color: #eab308;
+      color: #fde047;
+    }
+    .conn-pill.polling .conn-dot { background: #eab308; box-shadow: 0 0 8px #eab308; }
+
+    .conn-pill.offline {
+      background: rgba(220, 38, 38, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .conn-pill.offline .conn-dot { background: #ef4444; }
+
+    /* Container */
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    /* First-Run Setup View */
+    .hostel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 16px 0 24px;
+    }
+
+    @media (max-width: 520px) {
+      .hostel-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hostel-btn {
+      padding: 22px 16px;
+      font-family: inherit;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      background: #1a2640;
+      border: 3px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .hostel-btn span.z-num {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .hostel-btn:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .hostel-btn.selected {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+    }
+
+    .enable-btn {
+      width: 100%;
+      padding: 18px;
+      font-family: inherit;
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #ffffff;
+      background: var(--green);
+      border: 2px solid #86efac;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(22, 163, 74, 0.4);
+    }
+
+    .enable-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Status Bar in Student View */
+    .student-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .meta-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-hostel {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #38bdf8;
+    }
+
+    .meta-id {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .btn-small {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #1e293b;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    /* Past Alerts List */
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alert-item {
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-left: 6px solid var(--blue);
+    }
+
+    .alert-item.sev-1 { border-left-color: #eab308; }
+    .alert-item.sev-2 { border-left-color: #f97316; }
+    .alert-item.sev-3 { border-left-color: #ef4444; }
+
+    .alert-item-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 800;
+    }
+
+    .alert-item-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 6px;
+    }
+
+    /* Hidden Test Panel */
+    #testPanel {
+      display: none;
+      border: 2px dashed #f59e0b;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .sim-btn {
+      padding: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      color: #fff;
+    }
+
+    /* Full-Screen Alert Overlay */
+    #alertOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 24px;
+      color: #ffffff;
+      text-align: center;
+      overflow-y: auto;
+    }
+
+    #alertOverlay.active {
+      display: flex;
+    }
+
+    #alertOverlay.sev-3 {
+      background: #991b1b;
+      animation: flashRed 1s infinite alternate;
+    }
+
+    #alertOverlay.sev-2 {
+      background: #9a3412;
+      animation: flashOrange 1.2s infinite alternate;
+    }
+
+    #alertOverlay.sev-1 {
+      background: #854d0e;
+      color: #fefce8;
+    }
+
+    @keyframes flashRed {
+      0% { background-color: #7f1d1d; }
+      100% { background-color: #dc2626; }
+    }
+
+    @keyframes flashOrange {
+      0% { background-color: #7c2d12; }
+      100% { background-color: #ea580c; }
+    }
+
+    .overlay-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 10px 16px;
+      border-radius: 10px;
+    }
+
+    .overlay-center {
+      margin: auto 0;
+      padding: 20px 0;
+    }
+
+    .overlay-type {
+      font-size: 3rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .overlay-sev {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 24px;
+    }
+
+    .overlay-msg {
+      font-size: 1.65rem;
+      font-weight: 700;
+      max-width: 680px;
+      margin: 0 auto 28px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 20px;
+      border-radius: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .overlay-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .btn-im-safe {
+      width: 100%;
+      padding: 24px;
+      font-family: inherit;
+      font-size: 2rem;
+      font-weight: 900;
+      color: #052e16;
+      background: #4ade80;
+      border: 4px solid #ffffff;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      text-transform: uppercase;
+    }
+
+    .btn-im-safe.marked-safe {
+      background: #16a34a;
+      color: #ffffff;
+    }
+
+    .btn-dismiss {
+      padding: 12px;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.4);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="app-title" id="appTitle" title="Tap 5 times for test panel">HOSTEL ALERT GUARD</div>
+    <div class="conn-pill offline" id="connPill">
+      <span class="conn-dot"></span>
+      <span id="connText">Offline</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- First-Run Hostel Picker & Audio Unlock -->
+    <section class="card" id="setupView">
+      <h2>1. Select Your Hostel</h2>
+      <p style="color:var(--text-muted);">Choose your residence zone to receive targeted emergency broadcasts.</p>
+
+      <div class="hostel-grid">
+        <button type="button" class="hostel-btn" data-zone="1">
+          <span class="z-num">ZONE 1</span>
+          <span>Visvesvaraya</span>
+        </button>
+        <button type="button" class="hostel-btn" data-zone="2">
+          <span class="z-num">ZONE 2</span>
+          <span>Abdul Kalam</span>
+        </button>
+        <button type="button" class="hostel-btn" data-zone="3">
+          <span class="z-num">ZONE 3</span>
+          <span>Ramanujan</span>
+        </button>
+        <button type="button" class="hostel-btn" data-zone="4">
+          <span class="z-num">ZONE 4</span>
+          <span>Kalpana Chawla</span>
+        </button>
+      </div>
+
+      <h2>2. Activate Emergency Siren</h2>
+      <p style="color:var(--text-muted);margin-bottom:14px;">Unlocks loud Web Audio siren and screen wake lock for critical alerts.</p>
+      <button type="button" class="enable-btn" id="enableAlertsBtn" disabled>🔊 Tap to enable alerts</button>
+    </section>
+
+    <!-- Active Student Dashboard -->
+    <div id="studentView" style="display:none;">
+      <section class="card">
+        <div class="student-meta">
+          <div class="meta-info">
+            <div class="meta-hostel" id="displayHostel">Hostel Name</div>
+            <div class="meta-id">Client ID: <span id="displayClientId">—</span> · Queue: <span id="displayQueue">0</span></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-small" id="reUnlockAudioBtn">🔊 Test Audio</button>
+            <button type="button" class="btn-small" id="changeHostelBtn">Change Hostel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hidden Test Panel (Tap title 5 times) -->
+      <section class="card" id="testPanel">
+        <h2>🛠️ Offline Simulator Panel</h2>
+        <p style="color:var(--text-muted);">Simulate incoming emergency alerts locally without a server connection.</p>
+        <div class="sim-grid">
+          <button type="button" class="sim-btn" style="background:#dc2626;" data-sim-type="fire" data-sim-sev="3">🔥 Sev 3 Fire</button>
+          <button type="button" class="sim-btn" style="background:#ea580c;" data-sim-type="earthquake" data-sim-sev="2">🌍 Sev 2 Quake</button>
+          <button type="button" class="sim-btn" style="background:#ca8a04;" data-sim-type="drill" data-sim-sev="1">📢 Sev 1 Drill</button>
+          <button type="button" class="sim-btn" style="background:#16a34a;" data-sim-type="all-clear" data-sim-sev="1">✅ All Clear</button>
+        </div>
+      </section>
+
+      <!-- Past Alerts List -->
+      <section class="card">
+        <h2>Past Alerts</h2>
+        <div class="alert-list" id="pastAlertsList">
+          <p style="color:var(--text-muted);font-style:italic;">No alerts received yet. Standing by...</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Full-Screen Emergency Alert Overlay -->
+  <div id="alertOverlay">
+    <div class="overlay-top">
+      <span id="ovZone">ZONE</span>
+      <span id="ovTransport">Transport: WS</span>
+      <span id="ovWake">WakeLock: Active</span>
+    </div>
+
+    <div class="overlay-center">
+      <div class="overlay-sev" id="ovSev">SEVERITY 3 · CRITICAL</div>
+      <div class="overlay-type" id="ovType">🔥 FIRE EMERGENCY</div>
+      <div class="overlay-msg" id="ovMsg">Evacuate immediately via nearest stairs.</div>
+    </div>
+
+    <div class="overlay-actions">
+      <button type="button" class="btn-im-safe" id="imSafeBtn">✋ I'M SAFE</button>
+      <button type="button" class="btn-dismiss" id="dismissOverlayBtn">Silence Siren &amp; Minimize</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const ZONES = {
+        1: "Visvesvaraya",
+        2: "Abdul Kalam",
+        3: "Ramanujan",
+        4: "Kalpana Chawla"
+      };
+
+      const STATE_RANK = {
+        "delivered": 1,
+        "seen": 2,
+        "safe": 3
+      };
+
+      // Resilient storage wrapper (try/catch with memory fallback)
+      const memStore = {};
+      const store = {
+        get(key) {
+          try {
+            const val = window.localStorage.getItem(key);
+            return val !== null ? val : (memStore[key] ?? null);
+          } catch (_) {
+            return memStore[key] ?? null;
+          }
+        },
+        set(key, val) {
+          memStore[key] = String(val);
+          try {
+            window.localStorage.setItem(key, String(val));
+          } catch (_) {}
+        }
+      };
+
+      // State variables
+      let clientId = store.get("emergency_clientId");
+      if (!clientId) {
+        clientId = "stu-" + Math.random().toString(36).substring(2, 8) + "-" + Date.now().toString(36).slice(-4);
+        store.set("emergency_clientId", clientId);
+      }
+
+      let selectedZone = Number(store.get("emergency_zone")) || 0;
+      let lastSeq = Number(store.get("emergency_lastSeq")) || 0;
+      let seenAlertIds = new Set();
+      let pastAlerts = [];
+      let receiptStateByAlert = {}; // alertId -> highest state sent
+      let receiptQueue = [];
+      let activeAlert = null;
+
+      // Load persisted queue & past alerts if available
+      try {
+        const savedQueue = store.get("emergency_receiptQueue");
+        if (savedQueue) receiptQueue = JSON.parse(savedQueue) || [];
+        const savedAlerts = store.get("emergency_pastAlerts");
+        if (savedAlerts) {
+          pastAlerts = JSON.parse(savedAlerts) || [];
+          pastAlerts.forEach(a => { if (a && a.id) seenAlertIds.add(a.id); });
+        }
+      } catch (_) {}
+
+      // Audio & WakeLock state
+      let audioCtx = null;
+      let sirenTimer = null;
+      let vibrateTimer = null;
+      let wakeLockSentinel = null;
+
+      // Transport state
+      let currentTransport = "Offline";
+      let ws = null;
+      let sse = null;
+      let pollTimer = null;
+      let wsProbeTimer = null;
+      let wsReconnectTimer = null;
+      let wsFailures = 0;
+      let isInitialized = false;
+
+      // DOM elements
+      const setupView = document.getElementById("setupView");
+      const studentView = document.getElementById("studentView");
+      const hostelBtns = Array.from(document.querySelectorAll(".hostel-btn"));
+      const enableAlertsBtn = document.getElementById("enableAlertsBtn");
+      const connPill = document.getElementById("connPill");
+      const connText = document.getElementById("connText");
+      const displayHostel = document.getElementById("displayHostel");
+      const displayClientId = document.getElementById("displayClientId");
+      const displayQueue = document.getElementById("displayQueue");
+      const pastAlertsList = document.getElementById("pastAlertsList");
+      const alertOverlay = document.getElementById("alertOverlay");
+      const imSafeBtn = document.getElementById("imSafeBtn");
+      const dismissOverlayBtn = document.getElementById("dismissOverlayBtn");
+      const appTitle = document.getElementById("appTitle");
+      const testPanel = document.getElementById("testPanel");
+
+      // 1. First-run Hostel Selection & Audio Unlock
+      function updateHostelSelectionUI() {
+        hostelBtns.forEach(btn => {
+          const z = Number(btn.getAttribute("data-zone"));
+          btn.classList.toggle("selected", z === selectedZone);
+        });
+        enableAlertsBtn.disabled = !selectedZone;
+      }
+
+      hostelBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          selectedZone = Number(btn.getAttribute("data-zone"));
+          store.set("emergency_zone", selectedZone);
+          updateHostelSelectionUI();
+        });
+      });
+
+      function unlockAudioContext() {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!audioCtx && AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+          if (audioCtx && audioCtx.state === "suspended") {
+            audioCtx.resume();
+          }
+          // Play short confirmation beep
+          if (audioCtx) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+          }
+        } catch (_) {}
+      }
+
+      enableAlertsBtn.addEventListener("click", () => {
+        if (!selectedZone) return;
+        unlockAudioContext();
+        store.set("emergency_zone", selectedZone);
+        enterStudentDashboard();
+      });
+
+      document.getElementById("changeHostelBtn").addEventListener("click", () => {
+        setupView.style.display = "block";
+        studentView.style.display = "none";
+        updateHostelSelectionUI();
+      });
+
+      document.getElementById("reUnlockAudioBtn").addEventListener("click", () => {
+        unlockAudioContext();
+      });
+
+      function enterStudentDashboard() {
+        setupView.style.display = "none";
+        studentView.style.display = "block";
+        displayHostel.textContent = `${selectedZone}. ${ZONES[selectedZone] || "Hostel"}`;
+        displayClientId.textContent = clientId;
+        renderPastAlerts();
+
+        if (!isInitialized) {
+          isInitialized = true;
+          startTransports();
+        } else {
+          // Re-handshake with updated zone
+          restartTransports();
+        }
+      }
+
+      // If hostel was already saved in localStorage, pre-select it and show dashboard
+      if (selectedZone >= 1 && selectedZone <= 4) {
+        updateHostelSelectionUI();
+        enterStudentDashboard();
+      }
+
+      // 2. Connection Management (WebSocket -> 3 failures -> SSE -> Polling every 2s + 15s WS retry)
+      function setConnectionPill(mode) {
+        currentTransport = mode;
+        connPill.className = "conn-pill " + mode.toLowerCase();
+        connText.textContent = mode;
+      }
+
+      function stopFallbacks() {
+        if (sse) {
+          try { sse.close(); } catch (_) {}
+          sse = null;
+        }
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      }
+
+      function restartTransports() {
+        stopFallbacks();
+        if (ws) {
+          try { ws.close(); } catch (_) {}
+          ws = null;
+        }
+        wsFailures = 0;
+        connectWebSocket(false);
+      }
+
+      function startTransports() {
+        connectWebSocket(false);
+        // Keep trying WebSocket every 15s whenever not on WebSocket
+        if (wsProbeTimer) clearInterval(wsProbeTimer);
+        wsProbeTimer = setInterval(() => {
+          if (currentTransport !== "WebSocket") {
+            connectWebSocket(true);
+          }
+        }, 15000);
+      }
+
+      function connectWebSocket(isBackgroundProbe) {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          return;
+        }
+        if (wsReconnectTimer) {
+          clearTimeout(wsReconnectTimer);
+          wsReconnectTimer = null;
+        }
+
+        try {
+          const proto = location.protocol === "https:" ? "wss:" : "ws:";
+          const host = location.host || "localhost:3000";
+          const socket = new WebSocket(`${proto}//${host}/ws`);
+          ws = socket;
+
+          let opened = false;
+
+          socket.onopen = () => {
+            opened = true;
+            wsFailures = 0;
+            stopFallbacks();
+            setConnectionPill("WebSocket");
+            socket.send(JSON.stringify({
+              type: "hello",
+              clientId: clientId,
+              zone: selectedZone,
+              lastSeq: lastSeq
+            }));
+          };
+
+          socket.onmessage = (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              if (data.type === "alert" || data.alertType) {
+                handleIncomingAlert(data.alert || data, "websocket");
+              }
+            } catch (_) {}
+          };
+
+          socket.onclose = () => {
+            if (ws === socket) ws = null;
+            if (opened) {
+              // Dropped active WS connection
+              wsFailures = 1;
+              setConnectionPill("Offline");
+            } else if (!isBackgroundProbe) {
+              wsFailures++;
+            }
+
+            if (wsFailures < 3 && !isBackgroundProbe) {
+              const backoff = Math.min(4000, 600 * Math.pow(2, wsFailures - 1));
+              wsReconnectTimer = setTimeout(() => connectWebSocket(false), backoff);
+            } else if (currentTransport !== "SSE" && currentTransport !== "Polling") {
+              startSSEFallback();
+            }
+          };
+
+          socket.onerror = () => {
+            try { socket.close(); } catch (_) {}
+          };
+        } catch (_) {
+          wsFailures++;
+          if (wsFailures < 3 && !isBackgroundProbe) {
+            wsReconnectTimer = setTimeout(() => connectWebSocket(false), 1000);
+          } else {
+            startSSEFallback();
+          }
+        }
+      }
+
+      function startSSEFallback() {
+        if (currentTransport === "WebSocket") return;
+        stopFallbacks();
+
+        if (typeof EventSource === "undefined") {
+          startPollingFallback();
+          return;
+        }
+
+        try {
+          const streamUrl = `/api/stream?zone=${encodeURIComponent(selectedZone)}&clientId=${encodeURIComponent(clientId)}`;
+          const source = new EventSource(streamUrl);
+          sse = source;
+
+          source.onopen = () => {
+            if (currentTransport !== "WebSocket") {
+              setConnectionPill("SSE");
+            }
+          };
+
+          source.onmessage = (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              if (data && (data.id || data.alert)) {
+                handleIncomingAlert(data.alert || data, "sse");
+              }
+            } catch (_) {}
+          };
+
+          source.addEventListener("alert", (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              handleIncomingAlert(data.alert || data, "sse");
+            } catch (_) {}
+          });
+
+          source.onerror = () => {
+            try { source.close(); } catch (_) {}
+            if (sse === source) sse = null;
+            if (currentTransport !== "WebSocket") {
+              startPollingFallback();
+            }
+          };
+        } catch (_) {
+          startPollingFallback();
+        }
+      }
+
+      function startPollingFallback() {
+        if (currentTransport === "WebSocket") return;
+        if (sse) {
+          try { sse.close(); } catch (_) {}
+          sse = null;
+        }
+        if (pollTimer) clearInterval(pollTimer);
+
+        setConnectionPill("Polling");
+
+        const pollOnce = async () => {
+          if (currentTransport === "WebSocket") return;
+          try {
+            const url = `/api/alerts?since=${encodeURIComponent(lastSeq)}&zone=${encodeURIComponent(selectedZone)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Poll error");
+            setConnectionPill("Polling");
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.alerts || []);
+            list.forEach(item => handleIncomingAlert(item, "polling"));
+          } catch (_) {
+            if (currentTransport !== "WebSocket") {
+              setConnectionPill("Offline");
+            }
+          }
+        };
+
+        pollOnce();
+        pollTimer = setInterval(pollOnce, 2000);
+      }
+
+      // 3. Alert Handling, Deduplication, Siren, Vibration, WakeLock & Receipts
+      function isZoneMatch(zones) {
+        if (!Array.isArray(zones) || zones.length === 0) return true;
+        return zones.includes(0) || zones.includes(selectedZone) || zones.includes(String(selectedZone));
+      }
+
+      function handleIncomingAlert(alert, transport) {
+        if (!alert || !alert.id) return;
+        if (typeof alert.seq === "number" && alert.seq > lastSeq) {
+          lastSeq = alert.seq;
+          store.set("emergency_lastSeq", lastSeq);
+        }
+
+        if (!isZoneMatch(alert.zones)) return;
+
+        // Deduplicate by alert.id
+        if (seenAlertIds.has(alert.id)) return;
+        seenAlertIds.add(alert.id);
+
+        pastAlerts.unshift({
+          ...alert,
+          receivedVia: transport,
+          receivedAt: Date.now()
+        });
+        if (pastAlerts.length > 50) pastAlerts.pop();
+        store.set("emergency_pastAlerts", JSON.stringify(pastAlerts));
+
+        renderPastAlerts();
+
+        // 1) Immediately send "delivered" receipt
+        enqueueReceipt(alert.id, "delivered", transport);
+
+        // 2) Show full-screen alert, trigger siren + vibrate + wake lock, and send "seen" receipt
+        presentFullScreenAlert(alert, transport);
+      }
+
+      function presentFullScreenAlert(alert, transport) {
+        activeAlert = { alert, transport };
+        const sev = Number(alert.severity) || 3;
+
+        alertOverlay.className = `active sev-${sev}`;
+        document.getElementById("ovZone").textContent = `Zone ${selectedZone}: ${ZONES[selectedZone] || "All"}`;
+        document.getElementById("ovTransport").textContent = `Via: ${transport.toUpperCase()}`;
+        document.getElementById("ovSev").textContent = `SEVERITY ${sev} · ${sev === 3 ? "CRITICAL" : sev === 2 ? "URGENT" : "ADVISORY"}`;
+        document.getElementById("ovType").textContent = `${(alert.alertType || "ALERT").toUpperCase()}`;
+        document.getElementById("ovMsg").textContent = alert.message || "Follow campus emergency protocol immediately.";
+
+        imSafeBtn.textContent = "✋ I'M SAFE";
+        imSafeBtn.classList.remove("marked-safe");
+
+        startSiren(sev);
+        startVibration();
+        requestScreenWakeLock();
+
+        // Send "seen" receipt when alert appears on screen
+        enqueueReceipt(alert.id, "seen", transport);
+      }
+
+      // Loud Web Audio Siren Synthesis (No external audio files)
+      function startSiren(severity) {
+        stopSiren();
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!audioCtx && AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+          if (!audioCtx) return;
+          if (audioCtx.state === "suspended") {
+            audioCtx.resume();
+          }
+
+          const playCycle = () => {
+            if (!activeAlert || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = severity === 3 ? "sawtooth" : "square";
+            const lowFreq = severity === 3 ? 520 : 440;
+            const highFreq = severity === 3 ? 1180 : 880;
+
+            osc.frequency.setValueAtTime(lowFreq, now);
+            osc.frequency.linearRampToValueAtTime(highFreq, now + 0.45);
+            osc.frequency.linearRampToValueAtTime(lowFreq, now + 0.9);
+
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.setValueAtTime(0.35, now + 0.85);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.95);
+          };
+
+          playCycle();
+          sirenTimer = setInterval(playCycle, 1000);
+        } catch (_) {}
+      }
+
+      function stopSiren() {
+        if (sirenTimer) {
+          clearInterval(sirenTimer);
+          sirenTimer = null;
+        }
+      }
+
+      function startVibration() {
+        stopVibration();
+        try {
+          if (navigator.vibrate) {
+            navigator.vibrate([500, 200, 500, 200, 800]);
+            vibrateTimer = setInterval(() => {
+              if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+            }, 2200);
+          }
+        } catch (_) {}
+      }
+
+      function stopVibration() {
+        if (vibrateTimer) {
+          clearInterval(vibrateTimer);
+          vibrateTimer = null;
+        }
+        try {
+          if (navigator.vibrate) navigator.vibrate(0);
+        } catch (_) {}
+      }
+
+      // Screen Wake Lock API
+      async function requestScreenWakeLock() {
+        const wakeEl = document.getElementById("ovWake");
+        try {
+          if ("wakeLock" in navigator && navigator.wakeLock.request) {
+            wakeLockSentinel = await navigator.wakeLock.request("screen");
+            wakeEl.textContent = "WakeLock: Active";
+            wakeLockSentinel.addEventListener("release", () => {
+              wakeEl.textContent = "WakeLock: Released";
+            });
+          } else {
+            wakeEl.textContent = "WakeLock: Unsupported";
+          }
+        } catch (_) {
+          wakeEl.textContent = "WakeLock: Blocked";
+        }
+      }
+
+      async function releaseScreenWakeLock() {
+        try {
+          if (wakeLockSentinel) {
+            await wakeLockSentinel.release();
+            wakeLockSentinel = null;
+          }
+        } catch (_) {}
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && alertOverlay.classList.contains("active")) {
+          requestScreenWakeLock();
+        }
+      });
+
+      // I'M SAFE & Dismiss buttons
+      imSafeBtn.addEventListener("click", () => {
+        if (!activeAlert) return;
+        const { alert, transport } = activeAlert;
+        enqueueReceipt(alert.id, "safe", transport);
+        imSafeBtn.textContent = "✅ MARKED SAFE";
+        imSafeBtn.classList.add("marked-safe");
+        stopSiren();
+        stopVibration();
+        setTimeout(() => {
+          closeAlertOverlay();
+        }, 900);
+      });
+
+      dismissOverlayBtn.addEventListener("click", () => {
+        closeAlertOverlay();
+      });
+
+      function closeAlertOverlay() {
+        stopSiren();
+        stopVibration();
+        releaseScreenWakeLock();
+        alertOverlay.classList.remove("active");
+        activeAlert = null;
+      }
+
+      // 4. Idempotent Non-Downgrading Receipt Queue with 3s Retry
+      function enqueueReceipt(alertId, state, transport) {
+        if (!alertId || String(alertId).startsWith("sim-")) return;
+
+        const prevRank = STATE_RANK[receiptStateByAlert[alertId]] || 0;
+        const nextRank = STATE_RANK[state] || 0;
+        if (nextRank < prevRank) return; // States never downgrade
+        receiptStateByAlert[alertId] = state;
+
+        const payload = {
+          alertId,
+          clientId,
+          zone: selectedZone || 1,
+          state,
+          transport: (transport || currentTransport || "polling").toLowerCase()
+        };
+
+        const exists = receiptQueue.some(r => r.alertId === alertId && r.state === state);
+        if (!exists) {
+          receiptQueue.push(payload);
+          saveQueue();
+        }
+        flushReceiptQueue();
+      }
+
+      function saveQueue() {
+        displayQueue.textContent = String(receiptQueue.length);
+        store.set("emergency_receiptQueue", JSON.stringify(receiptQueue));
+      }
+
+      let isFlushing = false;
+      async function flushReceiptQueue() {
+        if (isFlushing || receiptQueue.length === 0) return;
+        isFlushing = true;
+
+        receiptQueue.sort((a, b) => (STATE_RANK[a.state] || 0) - (STATE_RANK[b.state] || 0));
+
+        const remaining = [];
+        for (const item of receiptQueue) {
+          try {
+            const res = await fetch("/api/receipt", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(item)
+            });
+            if (!res.ok) {
+              remaining.push(item);
+            }
+          } catch (_) {
+            remaining.push(item);
+          }
+        }
+
+        receiptQueue = remaining;
+        saveQueue();
+        isFlushing = false;
+      }
+
+      setInterval(flushReceiptQueue, 3000);
+
+      // Render Past Alerts
+      function renderPastAlerts() {
+        if (pastAlerts.length === 0) {
+          pastAlertsList.innerHTML = `<p style="color:var(--text-muted);font-style:italic;">No alerts received yet. Standing by...</p>`;
+          return;
+        }
+
+        pastAlertsList.innerHTML = pastAlerts.map(a => {
+          const sev = Number(a.severity) || 1;
+          const timeStr = new Date(a.ts || a.receivedAt || Date.now()).toLocaleTimeString([], {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          });
+          return `
+            <div class="alert-item sev-${sev}">
+              <div class="alert-item-head">
+                <span>${escapeHtml((a.alertType || "ALERT").toUpperCase())} (Sev ${sev})</span>
+                <span style="font-size:0.85rem;color:var(--text-muted);">${escapeHtml(timeStr)}</span>
+              </div>
+              <div>${escapeHtml(a.message)}</div>
+              <div class="alert-item-meta">
+                ID: ${escapeHtml(a.id)} · Via: ${escapeHtml((a.receivedVia || "ws").toUpperCase())}
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // 5. Hidden Test Panel (Tap title 5 times)
+      let tapCount = 0;
+      let tapResetTimer = null;
+      appTitle.addEventListener("click", () => {
+        tapCount++;
+        if (tapResetTimer) clearTimeout(tapResetTimer);
+        tapResetTimer = setTimeout(() => { tapCount = 0; }, 1800);
+
+        if (tapCount >= 5) {
+          tapCount = 0;
+          const isHidden = testPanel.style.display === "none" || !testPanel.style.display;
+          testPanel.style.display = isHidden ? "block" : "none";
+        }
+      });
+
+      document.querySelectorAll("[data-sim-type]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          unlockAudioContext();
+          const alertType = btn.getAttribute("data-sim-type");
+          const severity = Number(btn.getAttribute("data-sim-sev")) || 3;
+          const simAlert = {
+            id: "sim-" + Date.now(),
+            seq: lastSeq + 1,
+            alertType,
+            severity,
+            zones: [selectedZone || 1],
+            message: `[SIMULATED ${alertType.toUpperCase()}] Proceed to assembly area and tap I'M SAFE to test full-screen siren & Wake Lock.`,
+            ts: Date.now()
+          };
+          handleIncomingAlert(simAlert, "simulated");
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

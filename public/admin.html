@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency Broadcast Command Center — Admin</title>
+  <style>
+    :root {
+      --bg-base: #0b0f19;
+      --bg-panel: #131b2e;
+      --bg-panel-alt: #1b253d;
+      --bg-input: #0f1626;
+      --border: #2a3958;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --red: #ef4444;
+      --red-hover: #dc2626;
+      --orange: #f97316;
+      --yellow: #eab308;
+      --green: #22c55e;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Header & Topbar */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 24px;
+      margin-bottom: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 12px var(--red);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+    }
+
+    .brand h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .top-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .transport-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      background: var(--bg-panel-alt);
+      border: 1px solid var(--border);
+    }
+
+    .chip .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .chip.healthy {
+      border-color: rgba(34, 197, 94, 0.5);
+      background: rgba(34, 197, 94, 0.12);
+      color: #86efac;
+    }
+
+    .chip.healthy .dot {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .chip.down {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+    }
+
+    .chip.down .dot {
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+    }
+
+    .demo-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel-alt);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn:hover {
+      background: #263352;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-kill {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: var(--red);
+      color: #fca5a5;
+    }
+
+    .btn-kill:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-revive {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: var(--green);
+      color: #86efac;
+    }
+
+    .btn-revive:hover {
+      background: rgba(34, 197, 94, 0.3);
+    }
+
+    .sim-link {
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid var(--cyan);
+      color: #67e8f9;
+      font-weight: 700;
+    }
+
+    /* Main Grid Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    input[type="password"],
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      color: var(--text-main);
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid var(--blue);
+      border-color: transparent;
+    }
+
+    .severity-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .sev-option {
+      position: relative;
+    }
+
+    .sev-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sev-label {
+      display: block;
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: var(--bg-input);
+      cursor: pointer;
+      font-weight: 800;
+      transition: all 0.15s;
+    }
+
+    .sev-option input:checked + .sev-label.sev-1 {
+      border-color: var(--yellow);
+      background: rgba(234, 179, 8, 0.2);
+      color: #fde047;
+    }
+
+    .sev-option input:checked + .sev-label.sev-2 {
+      border-color: var(--orange);
+      background: rgba(249, 115, 22, 0.2);
+      color: #fdba74;
+    }
+
+    .sev-option input:checked + .sev-label.sev-3 {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+    }
+
+    /* Checkboxes */
+    .zones-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .zone-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .zone-check.all-toggle {
+      grid-column: 1 / -1;
+      background: var(--bg-panel-alt);
+      border-color: var(--blue);
+    }
+
+    .zone-check input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .btn-send-alert {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: var(--red);
+      border: 2px solid #fca5a5;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45);
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-send-alert:hover {
+      background: var(--red-hover);
+    }
+
+    .btn-send-alert:active {
+      transform: scale(0.99);
+    }
+
+    .status-banner {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      display: none;
+    }
+
+    .status-banner.ok {
+      display: block;
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid var(--green);
+      color: #86efac;
+    }
+
+    .status-banner.err {
+      display: block;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--red);
+      color: #fca5a5;
+    }
+
+    /* Hostel Cards */
+    .hostel-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .hostel-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--blue);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .hostel-card[data-zone="1"] { border-top-color: var(--blue); }
+    .hostel-card[data-zone="2"] { border-top-color: var(--purple); }
+    .hostel-card[data-zone="3"] { border-top-color: var(--cyan); }
+    .hostel-card[data-zone="4"] { border-top-color: var(--pink); }
+
+    .hostel-card h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .zone-badge {
+      font-size: 0.85rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--bg-panel-alt);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .metrics-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric-box {
+      background: var(--bg-input);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .metric-box.unreached-box {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .metric-val {
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+
+    .val-connected { color: #60a5fa; }
+    .val-delivered { color: #38bdf8; }
+    .val-seen { color: #facc15; }
+    .val-safe { color: #4ade80; }
+    .val-unreached { color: #f87171; }
+
+    /* Delivery Panel */
+    .delivery-meta {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--bg-input);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .progress-row {
+      margin-bottom: 16px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 22px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .bar-seg {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .bar-safe { background: var(--green); }
+    .bar-seen { background: var(--yellow); }
+    .bar-delivered { background: var(--blue); }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend i {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 1rem;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg-panel-alt);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .sev-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    .sev-pill.s1 { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid var(--yellow); }
+    .sev-pill.s2 { background: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid var(--orange); }
+    .sev-pill.s3 { background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid var(--red); }
+
+    .empty-msg {
+      color: var(--text-muted);
+      padding: 12px 0;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-dot" id="adminWsDot" title="Admin Live Socket"></div>
+      <h1>CAMPUS EMERGENCY ADMIN</h1>
+    </div>
+
+    <div class="top-controls">
+      <div class="transport-bar" id="transportChips">
+        <div class="chip" data-transport="websocket"><span class="dot"></span>WebSocket</div>
+        <div class="chip" data-transport="sse"><span class="dot"></span>SSE</div>
+        <div class="chip" data-transport="polling"><span class="dot"></span>Polling</div>
+        <div class="chip" data-transport="udp"><span class="dot"></span>UDP</div>
+      </div>
+
+      <div class="demo-buttons">
+        <button type="button" class="btn btn-kill" id="killWsBtn">Kill WebSocket</button>
+        <button type="button" class="btn btn-revive" id="reviveWsBtn">Revive WebSocket</button>
+      </div>
+
+      <a href="/simulator.html" class="sim-link">Open Simulator &rarr;</a>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Left Column: Alert Dispatch Form -->
+    <section class="panel">
+      <div class="panel-title">
+        <span>Dispatch Emergency Alert</span>
+      </div>
+
+      <form id="alertForm">
+        <div class="form-group">
+          <label for="adminPin">Admin PIN</label>
+          <input type="password" id="adminPin" value="1234" placeholder="Enter PIN (1234)" required />
+        </div>
+
+        <div class="form-group">
+          <label for="alertType">Alert Type</label>
+          <select id="alertType" required>
+            <option value="fire">🔥 Fire Emergency (fire)</option>
+            <option value="earthquake">🌍 Earthquake (earthquake)</option>
+            <option value="medical">🚑 Medical Emergency (medical)</option>
+            <option value="security">🚨 Security Lockdown (security)</option>
+            <option value="drill">📢 Readiness Drill (drill)</option>
+            <option value="all-clear">✅ All Clear (all-clear)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Severity Level</label>
+          <div class="severity-group">
+            <label class="sev-option">
+              <input type="radio" name="severity" value="1" />
+              <span class="sev-label sev-1">1 · Advisory</span>
+            </label>
+            <label class="sev-option">
+              <input type="radio" name="severity" value="2" />
+              <span class="sev-label sev-2">2 · Urgent</span>
+            </label>
+            <label class="sev-option">
+              <input type="radio" name="severity" value="3" checked />
+              <span class="sev-label sev-3">3 · Critical</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Target Hostels (Zones)</label>
+          <div class="zones-grid">
+            <label class="zone-check all-toggle">
+              <input type="checkbox" id="zoneAll" checked />
+              <span>0 — ALL HOSTELS</span>
+            </label>
+            <label class="zone-check">
+              <input type="checkbox" class="zone-item" value="1" checked />
+              <span>1 — Visvesvaraya</span>
+            </label>
+            <label class="zone-check">
+              <input type="checkbox" class="zone-item" value="2" checked />
+              <span>2 — Abdul Kalam</span>
+            </label>
+            <label class="zone-check">
+              <input type="checkbox" class="zone-item" value="3" checked />
+              <span>3 — Ramanujan</span>
+            </label>
+            <label class="zone-check">
+              <input type="checkbox" class="zone-item" value="4" checked />
+              <span>4 — Kalpana Chawla</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="alertMessage">Emergency Instructions / Message</label>
+          <textarea id="alertMessage" rows="3" required>Evacuate immediately via nearest stairs. Assemble at the main ground.</textarea>
+        </div>
+
+        <button type="submit" class="btn-send-alert">SEND EMERGENCY ALERT</button>
+        <div id="formStatus" class="status-banner"></div>
+      </form>
+    </section>
+
+    <!-- Right Column: Live Telemetry, Delivery & History -->
+    <div>
+      <!-- Four Hostel Cards -->
+      <div class="hostel-cards" id="hostelCards">
+        <div class="hostel-card" data-zone="1">
+          <h3>Visvesvaraya <span class="zone-badge">Zone 1</span></h3>
+          <div class="metrics-list">
+            <div class="metric-box"><span class="metric-label">Connected</span><span class="metric-val val-connected" id="z1-connected">0</span></div>
+            <div class="metric-box"><span class="metric-label">Delivered</span><span class="metric-val val-delivered" id="z1-delivered">0</span></div>
+            <div class="metric-box"><span class="metric-label">Seen</span><span class="metric-val val-seen" id="z1-seen">0</span></div>
+            <div class="metric-box"><span class="metric-label">Safe</span><span class="metric-val val-safe" id="z1-safe">0</span></div>
+            <div class="metric-box unreached-box"><span class="metric-label">Unreached</span><span class="metric-val val-unreached" id="z1-unreached">0</span></div>
+          </div>
+        </div>
+
+        <div class="hostel-card" data-zone="2">
+          <h3>Abdul Kalam <span class="zone-badge">Zone 2</span></h3>
+          <div class="metrics-list">
+            <div class="metric-box"><span class="metric-label">Connected</span><span class="metric-val val-connected" id="z2-connected">0</span></div>
+            <div class="metric-box"><span class="metric-label">Delivered</span><span class="metric-val val-delivered" id="z2-delivered">0</span></div>
+            <div class="metric-box"><span class="metric-label">Seen</span><span class="metric-val val-seen" id="z2-seen">0</span></div>
+            <div class="metric-box"><span class="metric-label">Safe</span><span class="metric-val val-safe" id="z2-safe">0</span></div>
+            <div class="metric-box unreached-box"><span class="metric-label">Unreached</span><span class="metric-val val-unreached" id="z2-unreached">0</span></div>
+          </div>
+        </div>
+
+        <div class="hostel-card" data-zone="3">
+          <h3>Ramanujan <span class="zone-badge">Zone 3</span></h3>
+          <div class="metrics-list">
+            <div class="metric-box"><span class="metric-label">Connected</span><span class="metric-val val-connected" id="z3-connected">0</span></div>
+            <div class="metric-box"><span class="metric-label">Delivered</span><span class="metric-val val-delivered" id="z3-delivered">0</span></div>
+            <div class="metric-box"><span class="metric-label">Seen</span><span class="metric-val val-seen" id="z3-seen">0</span></div>
+            <div class="metric-box"><span class="metric-label">Safe</span><span class="metric-val val-safe" id="z3-safe">0</span></div>
+            <div class="metric-box unreached-box"><span class="metric-label">Unreached</span><span class="metric-val val-unreached" id="z3-unreached">0</span></div>
+          </div>
+        </div>
+
+        <div class="hostel-card" data-zone="4">
+          <h3>Kalpana Chawla <span class="zone-badge">Zone 4</span></h3>
+          <div class="metrics-list">
+            <div class="metric-box"><span class="metric-label">Connected</span><span class="metric-val val-connected" id="z4-connected">0</span></div>
+            <div class="metric-box"><span class="metric-label">Delivered</span><span class="metric-val val-delivered" id="z4-delivered">0</span></div>
+            <div class="metric-box"><span class="metric-label">Seen</span><span class="metric-val val-seen" id="z4-seen">0</span></div>
+            <div class="metric-box"><span class="metric-label">Safe</span><span class="metric-val val-safe" id="z4-safe">0</span></div>
+            <div class="metric-box unreached-box"><span class="metric-label">Unreached</span><span class="metric-val val-unreached" id="z4-unreached">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latest Alert Delivery Panel -->
+      <section class="panel">
+        <div class="panel-title">
+          <span>Latest Alert Delivery Telemetry</span>
+          <span class="mono" id="deliveryAlertId" style="font-size:0.95rem;color:var(--text-muted);">No active alert</span>
+        </div>
+
+        <div id="deliverySummary" class="delivery-meta">
+          <span><strong>Type:</strong> <span id="delType">—</span></span>
+          <span><strong>Severity:</strong> <span id="delSev">—</span></span>
+          <span><strong>Zones:</strong> <span id="delZones">—</span></span>
+          <span><strong>Time:</strong> <span id="delTime">—</span></span>
+        </div>
+
+        <div class="legend">
+          <span><i style="background:var(--green)"></i> Safe</span>
+          <span><i style="background:var(--yellow)"></i> Seen (Not Safe Yet)</span>
+          <span><i style="background:var(--blue)"></i> Delivered Only</span>
+        </div>
+
+        <div id="progressBarsContainer">
+          <!-- Dynamically populated for Zones 1-4 -->
+        </div>
+
+        <h3 style="margin: 20px 0 10px; font-size: 1.1rem;">Unreached Clients</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Client ID</th>
+                <th>Hostel</th>
+                <th>Last Seen</th>
+              </tr>
+            </thead>
+            <tbody id="unreachedTableBody">
+              <tr><td colspan="3" class="empty-msg">All expected clients reached (or no active alert).</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Alert History Table -->
+      <section class="panel">
+        <div class="panel-title">
+          <span>Alert Broadcast History</span>
+          <span class="mono" id="historyCount" style="font-size:0.9rem;color:var(--text-muted);">0 alerts</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Seq / ID</th>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Zones</th>
+                <th>Message</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="6" class="empty-msg">No alerts broadcast yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const ZONES = {
+        0: "ALL",
+        1: "Visvesvaraya",
+        2: "Abdul Kalam",
+        3: "Ramanujan",
+        4: "Kalpana Chawla"
+      };
+
+      const DEFAULT_MESSAGES = {
+        "fire": "Evacuate immediately via nearest stairs. Do not use elevators. Assemble at the main ground.",
+        "earthquake": "DROP, COVER, and HOLD ON. Move to open ground away from buildings once shaking stops.",
+        "medical": "Medical emergency reported. Keep hostel corridors and access roads clear for ambulance.",
+        "security": "Security lockdown in effect. Stay inside your rooms, lock doors, and await official instructions.",
+        "drill": "Scheduled emergency readiness drill. Please acknowledge receipt and tap I'M SAFE.",
+        "all-clear": "ALL CLEAR. The emergency situation has been resolved. Normal hostel operations may resume."
+      };
+
+      let alertsById = new Map();
+      let latestAlertId = null;
+      let lastSeq = 0;
+      let latestDelivery = null;
+      let zoneStats = {};
+      let ws = null;
+
+      // DOM References
+      const zoneAllCheckbox = document.getElementById("zoneAll");
+      const zoneItemCheckboxes = Array.from(document.querySelectorAll(".zone-item"));
+      const alertTypeSelect = document.getElementById("alertType");
+      const alertMessageInput = document.getElementById("alertMessage");
+      const alertForm = document.getElementById("alertForm");
+      const formStatus = document.getElementById("formStatus");
+      const progressBarsContainer = document.getElementById("progressBarsContainer");
+      const unreachedTableBody = document.getElementById("unreachedTableBody");
+      const historyTableBody = document.getElementById("historyTableBody");
+      const historyCount = document.getElementById("historyCount");
+
+      // Initialize progress bars UI for the 4 hostels
+      function initProgressBars() {
+        let html = "";
+        for (let z = 1; z <= 4; z++) {
+          html += `
+            <div class="progress-row">
+              <div class="progress-header">
+                <span>${z}. ${ZONES[z]}</span>
+                <span class="mono" id="prog-label-${z}">0 / 0 reached (0 safe)</span>
+              </div>
+              <div class="progress-track">
+                <div class="bar-seg bar-safe" id="prog-safe-${z}" style="width: 0%"></div>
+                <div class="bar-seg bar-seen" id="prog-seen-${z}" style="width: 0%"></div>
+                <div class="bar-seg bar-delivered" id="prog-del-${z}" style="width: 0%"></div>
+              </div>
+            </div>
+          `;
+        }
+        progressBarsContainer.innerHTML = html;
+      }
+      initProgressBars();
+
+      // Zone Checkboxes Synchronization
+      zoneAllCheckbox.addEventListener("change", () => {
+        zoneItemCheckboxes.forEach(cb => {
+          cb.checked = zoneAllCheckbox.checked;
+        });
+      });
+
+      zoneItemCheckboxes.forEach(cb => {
+        cb.addEventListener("change", () => {
+          const allChecked = zoneItemCheckboxes.every(item => item.checked);
+          zoneAllCheckbox.checked = allChecked;
+        });
+      });
+
+      // Pre-fill helpful message when changing alert type
+      alertTypeSelect.addEventListener("change", () => {
+        const type = alertTypeSelect.value;
+        if (DEFAULT_MESSAGES[type]) {
+          alertMessageInput.value = DEFAULT_MESSAGES[type];
+        }
+      });
+
+      function showStatus(msg, isError) {
+        formStatus.textContent = msg;
+        formStatus.className = "status-banner " + (isError ? "err" : "ok");
+        setTimeout(() => {
+          formStatus.className = "status-banner";
+        }, 5000);
+      }
+
+      function formatTime(ts) {
+        if (!ts) return "—";
+        const d = new Date(typeof ts === "number" ? ts : Number(ts) || ts);
+        if (isNaN(d.getTime())) return String(ts);
+        return d.toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      }
+
+      function formatZones(zones) {
+        if (!Array.isArray(zones) || zones.length === 0) return "ALL";
+        if (zones.includes(0) || zones.length === 4) return "ALL Hostels";
+        return zones.map(z => ZONES[z] || `Zone ${z}`).join(", ");
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // Handle Form Submit with Confirm Dialog
+      alertForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const pin = document.getElementById("adminPin").value.trim();
+        const alertType = alertTypeSelect.value;
+        const severityEl = document.querySelector('input[name="severity"]:checked');
+        const severity = severityEl ? Number(severityEl.value) : 3;
+        const message = alertMessageInput.value.trim();
+
+        let zones = [];
+        if (zoneAllCheckbox.checked) {
+          zones = [0];
+        } else {
+          zones = zoneItemCheckboxes.filter(cb => cb.checked).map(cb => Number(cb.value));
+        }
+
+        if (zones.length === 0) {
+          showStatus("Please select at least one target hostel zone.", true);
+          return;
+        }
+
+        const zoneLabel = zones.includes(0) ? "ALL HOSTELS" : zones.map(z => ZONES[z]).join(", ");
+        const confirmed = window.confirm(
+          `CONFIRM EMERGENCY BROADCAST\n\n` +
+          `Type: ${alertType.toUpperCase()}\n` +
+          `Severity: Level ${severity}\n` +
+          `Target: ${zoneLabel}\n` +
+          `Message: "${message}"\n\n` +
+          `Are you sure you want to dispatch this alert immediately?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+          const res = await fetch("/api/alerts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-pin": pin
+            },
+            body: JSON.stringify({ alertType, severity, zones, message })
+          });
+
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(errText || `HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+          const createdAlert = data.alert || data;
+          if (createdAlert && createdAlert.id) {
+            ingestAlert(createdAlert);
+          }
+          showStatus(`Alert dispatched (${alertType.toUpperCase()}).`, false);
+        } catch (err) {
+          showStatus(`Failed to dispatch alert: ${err.message}`, true);
+        }
+      });
+
+      // Ingest Alert and Update History
+      function ingestAlert(alert) {
+        if (!alert || !alert.id) return;
+        alertsById.set(alert.id, alert);
+        if (typeof alert.seq === "number" && alert.seq > lastSeq) {
+          lastSeq = alert.seq;
+        }
+        // Track latest alert by highest seq or timestamp
+        const allAlerts = Array.from(alertsById.values()).sort((a, b) => {
+          if (a.seq !== undefined && b.seq !== undefined) return b.seq - a.seq;
+          return (b.ts || 0) - (a.ts || 0);
+        });
+
+        if (allAlerts.length > 0) {
+          const newest = allAlerts[0];
+          if (latestAlertId !== newest.id) {
+            latestAlertId = newest.id;
+            fetchDeliveryForAlert(latestAlertId);
+          }
+          updateLatestAlertHeader(newest);
+        }
+        renderHistoryTable(allAlerts);
+      }
+
+      function updateLatestAlertHeader(alert) {
+        document.getElementById("deliveryAlertId").textContent = `Alert ID: ${alert.id} (Seq #${alert.seq ?? "—"})`;
+        document.getElementById("delType").textContent = (alert.alertType || "—").toUpperCase();
+        document.getElementById("delSev").textContent = `Level ${alert.severity || "—"}`;
+        document.getElementById("delZones").textContent = formatZones(alert.zones);
+        document.getElementById("delTime").textContent = formatTime(alert.ts);
+      }
+
+      function renderHistoryTable(sortedAlerts) {
+        historyCount.textContent = `${sortedAlerts.length} alert${sortedAlerts.length === 1 ? "" : "s"}`;
+        if (sortedAlerts.length === 0) {
+          historyTableBody.innerHTML = `<tr><td colspan="6" class="empty-msg">No alerts broadcast yet.</td></tr>`;
+          return;
+        }
+
+        historyTableBody.innerHTML = sortedAlerts.map(a => `
+          <tr style="cursor:pointer" data-alert-id="${escapeHtml(a.id)}" title="Click to inspect delivery">
+            <td class="mono">#${escapeHtml(a.seq ?? "—")} <small style="color:var(--text-muted)">(${escapeHtml(a.id)})</small></td>
+            <td><strong>${escapeHtml((a.alertType || "").toUpperCase())}</strong></td>
+            <td><span class="sev-pill s${escapeHtml(a.severity || 1)}">Sev ${escapeHtml(a.severity || 1)}</span></td>
+            <td>${escapeHtml(formatZones(a.zones))}</td>
+            <td>${escapeHtml(a.message)}</td>
+            <td class="mono">${escapeHtml(formatTime(a.ts))}</td>
+          </tr>
+        `).join("");
+
+        historyTableBody.querySelectorAll("tr[data-alert-id]").forEach(row => {
+          row.addEventListener("click", () => {
+            const id = row.getAttribute("data-alert-id");
+            const found = alertsById.get(id);
+            if (found) {
+              latestAlertId = id;
+              updateLatestAlertHeader(found);
+              fetchDeliveryForAlert(id);
+            }
+          });
+        });
+      }
+
+      // Render Hostel Cards & Progress Bars
+      function updateZoneCardsAndProgress() {
+        const perZone = (latestDelivery && latestDelivery.perZone) || {};
+
+        for (let z = 1; z <= 4; z++) {
+          const zStat = zoneStats[z] || zoneStats[String(z)] || {};
+          const dStat = perZone[z] || perZone[String(z)] || {};
+
+          const connected = zStat.connected ?? zStat.clients ?? zStat.online ?? dStat.expected ?? 0;
+          const expected = dStat.expected ?? zStat.expected ?? connected ?? 0;
+          const delivered = dStat.delivered ?? zStat.delivered ?? 0;
+          const seen = dStat.seen ?? zStat.seen ?? 0;
+          const safe = dStat.safe ?? zStat.safe ?? 0;
+          const unreached = dStat.unreached ?? zStat.unreached ?? Math.max(0, expected - delivered);
+
+          document.getElementById(`z${z}-connected`).textContent = connected;
+          document.getElementById(`z${z}-delivered`).textContent = delivered;
+          document.getElementById(`z${z}-seen`).textContent = seen;
+          document.getElementById(`z${z}-safe`).textContent = safe;
+          document.getElementById(`z${z}-unreached`).textContent = unreached;
+
+          // Progress Bar math (states never downgrade: safe <= seen <= delivered <= expected)
+          const denom = Math.max(expected, delivered, seen, safe, 1);
+          const safePct = Math.min(100, Math.round((safe / denom) * 100));
+          const seenOnly = Math.max(0, seen - safe);
+          const seenPct = Math.min(100 - safePct, Math.round((seenOnly / denom) * 100));
+          const delOnly = Math.max(0, delivered - Math.max(seen, safe));
+          const delPct = Math.min(100 - safePct - seenPct, Math.round((delOnly / denom) * 100));
+
+          document.getElementById(`prog-safe-${z}`).style.width = `${safePct}%`;
+          document.getElementById(`prog-seen-${z}`).style.width = `${seenPct}%`;
+          document.getElementById(`prog-del-${z}`).style.width = `${delPct}%`;
+          document.getElementById(`prog-label-${z}`).textContent =
+            `${delivered} / ${expected} delivered · ${seen} seen · ${safe} safe (${unreached} unreached)`;
+        }
+
+        // Unreached Table
+        const unreachedList = (latestDelivery && latestDelivery.unreachedList) || [];
+        if (!Array.isArray(unreachedList) || unreachedList.length === 0) {
+          unreachedTableBody.innerHTML = `<tr><td colspan="3" class="empty-msg">All expected clients reached (or no unreached clients reported).</td></tr>`;
+        } else {
+          unreachedTableBody.innerHTML = unreachedList.map(item => `
+            <tr>
+              <td class="mono">${escapeHtml(item.clientId)}</td>
+              <td>${escapeHtml(ZONES[item.zone] || `Zone ${item.zone}`)}</td>
+              <td class="mono">${escapeHtml(formatTime(item.lastSeen))}</td>
+            </tr>
+          `).join("");
+        }
+      }
+
+      // Fetch Zone Stats
+      async function fetchZoneStats() {
+        try {
+          const res = await fetch("/api/stats/zones");
+          if (!res.ok) return;
+          const data = await res.json();
+          zoneStats = data.zones || data.perZone || data || {};
+          updateZoneCardsAndProgress();
+        } catch (_) {}
+      }
+
+      // Fetch Delivery for Specific Alert
+      async function fetchDeliveryForAlert(alertId) {
+        if (!alertId) return;
+        try {
+          const res = await fetch(`/api/alerts/${encodeURIComponent(alertId)}/delivery`);
+          if (!res.ok) return;
+          const data = await res.json();
+          latestDelivery = data;
+          updateZoneCardsAndProgress();
+        } catch (_) {}
+      }
+
+      // Fetch Alerts List
+      async function fetchAlerts() {
+        try {
+          const res = await fetch(`/api/alerts?since=0&zone=0`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : (data.alerts || []);
+          list.forEach(a => ingestAlert(a));
+        } catch (_) {}
+      }
+
+      // Fetch Transport Health
+      async function fetchTransports() {
+        try {
+          const res = await fetch("/api/transports");
+          if (!res.ok) return;
+          const data = await res.json();
+          const map = data.transports || data;
+          const chips = document.querySelectorAll("#transportChips .chip");
+          chips.forEach(chip => {
+            const key = chip.getAttribute("data-transport");
+            let val = map[key] ?? map[key.toUpperCase()] ?? map[key === "websocket" ? "ws" : key];
+            let isUp = false;
+            if (typeof val === "boolean") isUp = val;
+            else if (typeof val === "string") isUp = ["up", "ok", "healthy", "active", "online", "enabled"].includes(val.toLowerCase());
+            else if (val && typeof val === "object") isUp = Boolean(val.healthy ?? val.up ?? val.enabled ?? val.active ?? true);
+            else if (val !== undefined) isUp = Boolean(val);
+            else isUp = true;
+
+            chip.classList.remove("healthy", "down");
+            chip.classList.add(isUp ? "healthy" : "down");
+          });
+        } catch (_) {
+          document.querySelectorAll("#transportChips .chip").forEach(chip => {
+            chip.classList.remove("healthy");
+            chip.classList.add("down");
+          });
+        }
+      }
+
+      // Kill / Revive WebSocket Demo Controls
+      async function toggleWebSocketTransport(enable) {
+        const pin = document.getElementById("adminPin").value.trim() || "1234";
+        const action = enable ? "revive" : "kill";
+        const endpoints = [
+          { url: "/api/transports/websocket", method: "POST", body: { enabled: enable, active: enable, state: enable ? "up" : "down", action } },
+          { url: "/api/transports", method: "POST", body: { transport: "websocket", ws: enable, websocket: enable, enabled: enable, action } },
+          { url: `/api/transports/ws/${action}`, method: "POST", body: {} },
+          { url: `/api/admin/ws/${action}`, method: "POST", body: {} }
+        ];
+
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep.url, {
+              method: ep.method,
+              headers: {
+                "Content-Type": "application/json",
+                "x-admin-pin": pin
+              },
+              body: JSON.stringify(ep.body)
+            });
+            if (res.ok) {
+              break;
+            }
+          } catch (_) {}
+        }
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({ type: enable ? "revive-ws" : "kill-ws", transport: "websocket", enabled: enable, pin }));
+          } catch (_) {}
+        }
+
+        setTimeout(fetchTransports, 250);
+      }
+
+      document.getElementById("killWsBtn").addEventListener("click", () => toggleWebSocketTransport(false));
+      document.getElementById("reviveWsBtn").addEventListener("click", () => toggleWebSocketTransport(true));
+
+      // Admin WebSocket connection for instant live telemetry
+      function connectAdminWS() {
+        try {
+          const proto = location.protocol === "https:" ? "wss:" : "ws:";
+          const host = location.host || "localhost:3000";
+          ws = new WebSocket(`${proto}//${host}/ws`);
+
+          ws.onopen = () => {
+            document.getElementById("adminWsDot").style.background = "var(--green)";
+            document.getElementById("adminWsDot").style.boxShadow = "0 0 12px var(--green)";
+            ws.send(JSON.stringify({
+              type: "hello",
+              clientId: "admin-dashboard",
+              zone: 0,
+              lastSeq: lastSeq
+            }));
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === "alert") {
+                ingestAlert(msg);
+              } else if (msg.type === "delivery") {
+                if (!latestAlertId || msg.alertId === latestAlertId) {
+                  latestDelivery = msg;
+                  updateZoneCardsAndProgress();
+                }
+              }
+            } catch (_) {}
+          };
+
+          ws.onclose = () => {
+            document.getElementById("adminWsDot").style.background = "var(--red)";
+            document.getElementById("adminWsDot").style.boxShadow = "0 0 12px var(--red)";
+            setTimeout(connectAdminWS, 3000);
+          };
+
+          ws.onerror = () => {
+            try { ws.close(); } catch (_) {}
+          };
+        } catch (_) {
+          setTimeout(connectAdminWS, 3000);
+        }
+      }
+
+      // Startup & Periodic Refresh
+      fetchTransports();
+      fetchZoneStats();
+      fetchAlerts();
+      connectAdminWS();
+
+      setInterval(() => {
+        fetchTransports();
+        fetchZoneStats();
+        if (latestAlertId) fetchDeliveryForAlert(latestAlertId);
+      }, 2000);
+    })();
+  </script>
+</body>
+</html>
